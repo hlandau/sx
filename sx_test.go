@@ -114,7 +114,7 @@ func TestQuery(t *testing.T) {
     (alpha)
     (beta
       (x)
-      (y qwe)
+      (y 42)
       (z))
     (gamma)
     (delta)
@@ -140,12 +140,12 @@ func TestQuery(t *testing.T) {
     t.Fatalf("no match")
   }
 
-  out, err := sx.SX.String(r)
+  out, err := sx.SXCanonical.String(r)
   if err != nil {
     t.Fatalf("cannot serialize: %v", err)
   }
 
-  if out != "3:qwe" {
+  if out != "42 " {
     t.Fatalf("mismatch: %#v", out)
   }
 }

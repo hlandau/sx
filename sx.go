@@ -55,9 +55,19 @@ type Format struct {
 
 	maxListDepth  uint
 	unicodeStream bool
+
+  serializationMode int
 }
 
+const (
+  szModeAdvanced = iota
+  szModeCanonical
+  szModeTransport
+)
+
 var Csexp Format
+
+var CsexpCanonical Format
 
 // This package's own preferred syntax. Serializes in canonical form.
 //
@@ -71,6 +81,9 @@ var Csexp Format
 //   Bare words (including integers)           -> string, int, int64, uint64
 //
 var SX Format
+
+// Like SX, but serializes in canonical form.
+var SXCanonical Format
 
 func init() {
 	Csexp = Format{
@@ -98,6 +111,11 @@ func init() {
 		maxListDepth:                    255,
 		unicodeStream:                   true,
 	}
+
+  CsexpCanonical = Csexp
+  CsexpCanonical.serializationMode = szModeCanonical
+  SXCanonical = SX
+  SXCanonical.serializationMode = szModeCanonical
 }
 
 // Advanced incremental parse interface. Write data to be parsed to the Parser
@@ -588,17 +606,27 @@ func write(vs []interface{}, w io.Writer, fmt *Format) error {
 
 func writeInt(vs int64, b *bufio.Writer, fmt *Format) {
 	b.WriteString(strconv.FormatInt(vs, 10))
+  if fmt.serializationMode == szModeCanonical {
+    b.WriteRune(' ')
+  }
 }
 
 func writeUint(vs uint64, b *bufio.Writer, fmt *Format) {
 	b.WriteString(strconv.FormatUint(vs, 10))
+  if fmt.serializationMode == szModeCanonical {
+    b.WriteRune(' ')
+  }
 }
 
 type spacer struct {
 	prevType rune
+  f *Format
 }
 
 func (s *spacer) write(b *bufio.Writer, t rune) {
+  if s.f.serializationMode == szModeCanonical {
+    return
+  }
 	if s.prevType == 'i' {
 		b.WriteRune(' ')
 	}
@@ -606,7 +634,7 @@ func (s *spacer) write(b *bufio.Writer, t rune) {
 }
 
 func writeList(vs []interface{}, b *bufio.Writer, f *Format) error {
-	var spacer spacer
+  spacer := spacer{f: f,}
 	for _, v := range vs {
 		switch vv := v.(type) {
 		case string:
