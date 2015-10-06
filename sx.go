@@ -56,13 +56,13 @@ type Format struct {
 	maxListDepth  uint
 	unicodeStream bool
 
-  serializationMode int
+	serializationMode int
 }
 
 const (
-  szModeAdvanced = iota
-  szModeCanonical
-  szModeTransport
+	szModeAdvanced = iota
+	szModeCanonical
+	szModeTransport
 )
 
 var Csexp Format
@@ -112,10 +112,10 @@ func init() {
 		unicodeStream:                   true,
 	}
 
-  CsexpCanonical = Csexp
-  CsexpCanonical.serializationMode = szModeCanonical
-  SXCanonical = SX
-  SXCanonical.serializationMode = szModeCanonical
+	CsexpCanonical = Csexp
+	CsexpCanonical.serializationMode = szModeCanonical
+	SXCanonical = SX
+	SXCanonical.serializationMode = szModeCanonical
 }
 
 // Advanced incremental parse interface. Write data to be parsed to the Parser
@@ -130,7 +130,7 @@ type Parser struct {
 	xL        uint64
 	i         uint64
 	neg       bool
-  lenhint   bool // superfluous length hint present?
+	lenhint   bool // superfluous length hint present?
 	sub       bool // is subparser for verbatim {base64} syntax?
 	bytemode  byte
 	reissue   int
@@ -152,13 +152,13 @@ const (
 	pstateLengthByteString
 	pstateQuotedString
 	pstateQuotedStringEscape
-  pstateQuotedStringHexEscape
-  pstateQuotedStringHexEscape2
-  pstateQuotedStringOctalEscape
-  pstateQuotedStringOctalEscape2
-  pstateQuotedStringOctalEscape3
-  pstateQuotedStringEscapeCR
-  pstateQuotedStringEscapeLF
+	pstateQuotedStringHexEscape
+	pstateQuotedStringHexEscape2
+	pstateQuotedStringOctalEscape
+	pstateQuotedStringOctalEscape2
+	pstateQuotedStringOctalEscape3
+	pstateQuotedStringEscapeCR
+	pstateQuotedStringEscapeLF
 	pstateBase64String
 	pstateToken
 	pstateHexString
@@ -230,11 +230,11 @@ func dechex(r rune) (byte, bool) {
 }
 
 func decoct(r rune) (byte, bool) {
-  if r >= '0' && r <= '7' {
-    return byte(r - '0'), true
-  } else {
-    return 0, false
-  }
+	if r >= '0' && r <= '7' {
+		return byte(r - '0'), true
+	} else {
+		return 0, false
+	}
 }
 
 const useUnicode = true
@@ -251,10 +251,10 @@ func (p *Parser) write(b []byte) (int, error) {
 			}
 
 			if !useUnicode || p.bytemode != 0 {
-        r = rune(b[i])
-        i += 1
+				r = rune(b[i])
+				i += 1
 			} else {
-			  var sz int
+				var sz int
 				r, sz = utf8.DecodeRune(b[i:])
 				// ignore errors
 				i += sz
@@ -295,7 +295,7 @@ func (p *Parser) write(b []byte) (int, error) {
 				p.state = pstateQuotedString
 			case r == '|' && p.f.allowBase64BinaryString:
 				p.state = pstateBase64String
-				p.b64dec = base64.NewDecoder(base64.StdEncoding, &filteringReader{&p.b64sr,})
+				p.b64dec = base64.NewDecoder(base64.StdEncoding, &filteringReader{&p.b64sr})
 			case r == '{' && p.f.allowVerbatimBase64BinaryString && !p.sublexing:
 				p.sublexing = true
 				p.subb64 = newWriteDecoder(writerFunc(p.write))
@@ -324,9 +324,9 @@ func (p *Parser) write(b []byte) (int, error) {
 				p.neg = true
 				p.reissue++
 			default:
-        p.state = pstateToken
-        p.s = "-"
-        p.reissue++
+				p.state = pstateToken
+				p.s = "-"
+				p.reissue++
 			}
 		case pstateInteger:
 			switch {
@@ -336,21 +336,21 @@ func (p *Parser) write(b []byte) (int, error) {
 				p.xL = p.i
 				p.i = 0
 				p.state = pstateLengthQuotedString
-      case r == '#' && p.f.allowHexBinaryString && !p.neg:
-        p.xL = p.i
-        p.i = 0
-        p.state = pstateHexString
-        p.lenhint = true
-      case r == '|' && p.f.allowBase64BinaryString && !p.neg:
-        p.xL = p.i
-        p.i = 0
-        p.state = pstateBase64String
-        p.lenhint = true
+			case r == '#' && p.f.allowHexBinaryString && !p.neg:
+				p.xL = p.i
+				p.i = 0
+				p.state = pstateHexString
+				p.lenhint = true
+			case r == '|' && p.f.allowBase64BinaryString && !p.neg:
+				p.xL = p.i
+				p.i = 0
+				p.state = pstateBase64String
+				p.lenhint = true
 			case r == ':' && p.f.allowVerbatimBinaryString && !p.neg:
 				p.xL = p.i
 				p.i = 0
 				p.state = pstateLengthByteString
-        p.lenhint = true
+				p.lenhint = true
 				p.bytemode++
 			default:
 				if p.neg {
@@ -377,11 +377,11 @@ func (p *Parser) write(b []byte) (int, error) {
 			if p.xL == 0 {
 				p.bytemode--
 				p.state = pstateDrifting
-				p.push(p.b)
-				p.b = []byte{}
+				p.push(p.s)
+				p.s = ""
 				p.reissue++
 			} else {
-				p.b = append(p.b, byte(r))
+				p.s += string([]byte{byte(r)})
 				p.xL--
 			}
 		case pstateLengthQuotedString:
@@ -403,7 +403,7 @@ func (p *Parser) write(b []byte) (int, error) {
 				p.state = pstateDrifting
 				p.push(p.s)
 				p.s = ""
-      case '\\':
+			case '\\':
 				p.state = pstateQuotedStringEscape
 			default:
 				p.s += string(r)
@@ -425,59 +425,59 @@ func (p *Parser) write(b []byte) (int, error) {
 				p.s += "\t"
 			case 'v':
 				p.s += "\v"
-      case '\r':
-        p.state = pstateQuotedStringEscapeLF
-      case '\n':
-        p.state = pstateQuotedStringEscapeCR
-      case 'x':
-        p.state = pstateQuotedStringHexEscape
+			case '\r':
+				p.state = pstateQuotedStringEscapeLF
+			case '\n':
+				p.state = pstateQuotedStringEscapeCR
+			case 'x':
+				p.state = pstateQuotedStringHexEscape
 			default:
-        if r >= '0' && r <= '7' {
-          p.state = pstateQuotedStringOctalEscape
-          p.i = 0
-          p.reissue++
-        } else {
-          p.s += string(r)
-        }
+				if r >= '0' && r <= '7' {
+					p.state = pstateQuotedStringOctalEscape
+					p.i = 0
+					p.reissue++
+				} else {
+					p.s += string(r)
+				}
 			}
-    case pstateQuotedStringHexEscape:
-      v, ok := dechex(r)
-      if !ok {
-        return i, &err{r}
-      }
-      p.i = uint64(v)
-      p.state = pstateQuotedStringHexEscape2
-    case pstateQuotedStringHexEscape2:
-      v, ok := dechex(r)
-      if !ok {
-        return i, &err{r}
-      }
-      p.s += string([]byte{byte(p.i << 4) | v})
-      p.state = pstateQuotedString
-      p.i = 0
-    case pstateQuotedStringOctalEscape, pstateQuotedStringOctalEscape2, pstateQuotedStringOctalEscape3:
-      v, ok := decoct(r)
-      if !ok {
-        return i, &err{r}
-      }
-      p.i = uint64(byte(p.i << 3) | v)
-      if p.state == pstateQuotedStringOctalEscape3 {
-        p.state = pstateQuotedString
-        p.s += string([]byte{byte(p.i)})
-        p.i = 0
-      } else {
-        p.state++
-      }
-    case pstateQuotedStringEscapeLF:
-      if r != '\n' {
-        p.reissue++
-      }
-      p.state = pstateQuotedString
-    case pstateQuotedStringEscapeCR:
-      if r == '\r' {
-        p.reissue++
-      }
-      p.state = pstateQuotedString
+		case pstateQuotedStringHexEscape:
+			v, ok := dechex(r)
+			if !ok {
+				return i, &err{r}
+			}
+			p.i = uint64(v)
+			p.state = pstateQuotedStringHexEscape2
+		case pstateQuotedStringHexEscape2:
+			v, ok := dechex(r)
+			if !ok {
+				return i, &err{r}
+			}
+			p.s += string([]byte{byte(p.i<<4) | v})
+			p.state = pstateQuotedString
+			p.i = 0
+		case pstateQuotedStringOctalEscape, pstateQuotedStringOctalEscape2, pstateQuotedStringOctalEscape3:
+			v, ok := decoct(r)
+			if !ok {
+				return i, &err{r}
+			}
+			p.i = uint64(byte(p.i<<3) | v)
+			if p.state == pstateQuotedStringOctalEscape3 {
+				p.state = pstateQuotedString
+				p.s += string([]byte{byte(p.i)})
+				p.i = 0
+			} else {
+				p.state++
+			}
+		case pstateQuotedStringEscapeLF:
+			if r != '\n' {
+				p.reissue++
+			}
+			p.state = pstateQuotedString
+		case pstateQuotedStringEscapeCR:
+			if r == '\r' {
+				p.reissue++
+			}
+			p.state = pstateQuotedString
 		case pstateBase64String:
 			// i indexes the nest character to read, not the current one, so -1 everything
 			idx := bytes.IndexByte(b[i-1:], '|')
@@ -491,23 +491,23 @@ func (p *Parser) write(b []byte) (int, error) {
 			buf, _ := ioutil.ReadAll(p.b64dec)
 			p.s += string(buf)
 			if idx >= 0 {
-        if p.lenhint && uint64(len(p.s)) != p.xL {
-          return i, &err{r}
-        }
+				if p.lenhint && uint64(len(p.s)) != p.xL {
+					return i, &err{r}
+				}
 				p.state = pstateDrifting
 				p.push(p.s)
 				p.s = ""
 			}
 		case pstateHexString:
 			if r == '#' {
-        if p.lenhint && uint64(len(p.b)) != p.xL {
-          return i, &err{r}
-        }
+				if p.lenhint && uint64(len(p.s)) != p.xL {
+					return i, &err{r}
+				}
 				p.state = pstateDrifting
-				p.push(p.b)
-				p.b = nil
+				p.push(p.s)
+				p.s = ""
 				p.i = 0
-        p.lenhint = false
+				p.lenhint = false
 			} else if r == ' ' || r == '\r' || r == '\n' || r == '\t' {
 				// skip
 			} else {
@@ -529,7 +529,7 @@ func (p *Parser) write(b []byte) (int, error) {
 					return i, &err{r}
 				}
 
-				p.b = append(p.b, (byte(p.i)<<4)|hv)
+				p.s += string([]byte{byte((byte(p.i) << 4) | hv)})
 				p.state = pstateHexString
 			}
 		default:
@@ -606,27 +606,21 @@ func write(vs []interface{}, w io.Writer, fmt *Format) error {
 
 func writeInt(vs int64, b *bufio.Writer, fmt *Format) {
 	b.WriteString(strconv.FormatInt(vs, 10))
-  if fmt.serializationMode == szModeCanonical {
-    b.WriteRune(' ')
-  }
 }
 
 func writeUint(vs uint64, b *bufio.Writer, fmt *Format) {
 	b.WriteString(strconv.FormatUint(vs, 10))
-  if fmt.serializationMode == szModeCanonical {
-    b.WriteRune(' ')
-  }
 }
 
 type spacer struct {
 	prevType rune
-  f *Format
+	f        *Format
 }
 
 func (s *spacer) write(b *bufio.Writer, t rune) {
-  if s.f.serializationMode == szModeCanonical {
-    return
-  }
+	if s.f.serializationMode == szModeCanonical {
+		return
+	}
 	if s.prevType == 'i' {
 		b.WriteRune(' ')
 	}
@@ -634,7 +628,7 @@ func (s *spacer) write(b *bufio.Writer, t rune) {
 }
 
 func writeList(vs []interface{}, b *bufio.Writer, f *Format) error {
-  spacer := spacer{f: f,}
+	spacer := spacer{f: f}
 	for _, v := range vs {
 		switch vv := v.(type) {
 		case string:
@@ -648,12 +642,21 @@ func writeList(vs []interface{}, b *bufio.Writer, f *Format) error {
 		case int:
 			spacer.write(b, 'i')
 			writeInt(int64(vv), b, f)
+			if f.serializationMode == szModeCanonical {
+				b.WriteRune(' ')
+			}
 		case int64:
 			spacer.write(b, 'i')
 			writeInt(vv, b, f)
+			if f.serializationMode == szModeCanonical {
+				b.WriteRune(' ')
+			}
 		case uint64:
 			spacer.write(b, 'i')
 			writeUint(vv, b, f)
+			if f.serializationMode == szModeCanonical {
+				b.WriteRune(' ')
+			}
 		case []interface{}:
 			b.WriteRune('(')
 			if err := writeList(vv, b, f); err != nil {

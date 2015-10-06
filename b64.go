@@ -13,7 +13,7 @@ type writeDecoder struct {
 
 func newWriteDecoder(sink io.Writer) *writeDecoder {
 	wd := &writeDecoder{sink: sink}
-	wd.b64dec = base64.NewDecoder(base64.StdEncoding, &filteringReader{&wd.b64sr,})
+	wd.b64dec = base64.NewDecoder(base64.StdEncoding, &filteringReader{&wd.b64sr})
 	return wd
 }
 
